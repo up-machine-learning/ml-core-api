@@ -1,0 +1,14 @@
+version: '3'
+name: up_ai_sentimental_project
+
+services:
+  ai_sentimental_api:
+    container_name: up_ai_sentimental_api
+    image: ghcr.io/up-machine-learning/core-api
+    ports:
+      - "7000:8000"
+    volumes:
+      - /opt/up/ai_sentimental:/app/db
+      - /opt/up/ai_sentimental/static:/app/static
+    environment:
+      - TZ=Asia/Phnom_Penh
