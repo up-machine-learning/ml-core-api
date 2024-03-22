@@ -9,6 +9,7 @@ from math import radians, sin, cos, sqrt, atan2
 import json
 import joblib
 import urllib.parse
+from scipy.sparse import hstack
 
 from src.suggestion.schemas import CreateSuggestionDto, CreateResponseDto, DestinationDto, ReviewDto, DestinationPageDto
 from src.user.model import User
@@ -81,6 +82,11 @@ async def build_ai_trip_model():
         combined_df['reviews'].apply(lambda reviews: ' '.join([review['comment'] for review in reviews])))
     y_sentiment = combined_df['avg_sentiment']
     sentiment_model = RandomForestRegressor()
+
+    combined_df['num_reviews'] = combined_df['reviews'].apply(len)
+    X_num_reviews = combined_df['num_reviews'].values.reshape(-1, 1)
+    X_combined = hstack([X_text, X_num_reviews])
+
     sentiment_model.fit(X_text, y_sentiment)
     joblib.dump(sentiment_model, sentiment_model_file)
     joblib.dump(vectorizer, vectorizer_model_file)  # Save the trained vectorizer
@@ -130,6 +136,7 @@ async def trip_suggestion(create_dto: CreateSuggestionDto, current_user: User):
 async def get_suggestion_by_type(user_location, desired_tags, destination_type, combined_df, vectorizer,
                                  sentiment_model):
     shops_df = combined_df[combined_df['type'] == destination_type].copy()
+    shops_df['num_reviews'] = combined_df['reviews'].apply(len)
     X_text = vectorizer.transform(
         shops_df['reviews'].apply(lambda reviews: ' '.join([review['comment'] for review in reviews])))
     shops_df['predicted_sentiment'] = sentiment_model.predict(X_text)
@@ -144,7 +151,7 @@ async def get_suggestion_by_type(user_location, desired_tags, destination_type, 
         lambda row: haversine_distance(user_location, (row['gglat'], row['gglon'])), axis=1)
 
     # Top 5 recommended shops
-    top_5_shop_recommendations = filtered_shops_df.sort_values(by='predicted_sentiment', ascending=False).head(9)
+    top_5_shop_recommendations = filtered_shops_df.sort_values(by=['num_reviews', 'avg_sentiment'], ascending=[False, False]).head(9)
     # print(top_5_shop_recommendations[
     #           ['id', 'type', 'name', 'avg_sentiment', 'distance', 'predicted_sentiment', 'gglat', 'gglon', 'tags']])
     top_5_shop_recommendation_array = top_5_shop_recommendations.to_numpy()
