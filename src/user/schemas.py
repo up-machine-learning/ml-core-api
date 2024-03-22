@@ -8,7 +8,6 @@ from src.media.schemas import MediaDto, MediaShortDto
 class UserBaseDto(_pydantic.BaseModel):
     email: str
     name: str
-    type: str
     profile: Optional[MediaDto] = None
 
 
@@ -31,7 +30,6 @@ class UserDto(UserBaseDto):
 
 class UserShortDto(_pydantic.BaseModel):
     id: int
-    type: str
     name: str
     profile: Optional[MediaShortDto] = None
 

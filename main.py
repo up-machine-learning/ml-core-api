@@ -8,7 +8,7 @@ from starlette.staticfiles import StaticFiles
 
 import src.user.router as user_router
 import src.media.router as media_router
-import src.post.router as post_router
+# import src.post.router as post_router
 import src.suggestion.router as suggestion_router
 import uvicorn
 from alembic import command
@@ -21,7 +21,7 @@ load_dotenv()
 # Include routers
 app.include_router(user_router.router)
 app.include_router(media_router.router)
-app.include_router(post_router.router)
+# app.include_router(post_router.router)
 app.include_router(suggestion_router.router)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")

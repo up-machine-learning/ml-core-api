@@ -24,15 +24,10 @@ async def get_user_by_email(email: str, db: _orm.Session):
 
 
 async def create_user(user: UserCreateDto, db: _orm.Session):
-    support_user_type = ['USER', 'PAGE']
-    if user.type.upper() not in support_user_type:
-        raise _fastapi.HTTPException(
-            status_code=403, detail="user type not support"
-        )
 
     user_obj = User(
         email=user.email, hashed_password=_hash.bcrypt.hash(user.hashed_password), name=user.name,
-        type=user.type.upper()
+        type='USER'
     )
     db.add(user_obj)
     db.commit()
