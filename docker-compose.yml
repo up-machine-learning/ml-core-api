@@ -6,7 +6,7 @@ services:
     container_name: up_ml_sentimental_api
     image: ghcr.io/up-machine-learning/ml-core-api
     ports:
-      - "7001:8000"
+      - "7001:9000"
     volumes:
       - /opt/up/ml_sentimental:/app/db
       - /opt/up/ml_sentimental/static:/app/static
