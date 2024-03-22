@@ -3,11 +3,13 @@ import os
 from alembic.config import Config
 from dotenv import load_dotenv
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from starlette.staticfiles import StaticFiles
 
 import src.user.router as user_router
 import src.media.router as media_router
 import src.post.router as post_router
+import src.suggestion.router as suggestion_router
 import uvicorn
 from alembic import command
 
@@ -20,8 +22,18 @@ load_dotenv()
 app.include_router(user_router.router)
 app.include_router(media_router.router)
 app.include_router(post_router.router)
+app.include_router(suggestion_router.router)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 def apply_migrations():
@@ -35,5 +47,5 @@ if __name__ == "__main__":
     apply_migrations()
     print("Database migrations applied.")
     # Get port number from environment variables, default to 8000 if not found
-    port = int(os.getenv("PORT", 8000))
+    port = int(os.getenv("PORT", 9000))
     uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
