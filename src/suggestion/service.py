@@ -241,7 +241,14 @@ async def get_all_destinations(page: int, limit: int, search: str = None) -> Des
     # Convert filtered destination data to DestinationDto objects
     destinations_dto: [DestinationDto] = []
     for index, row in filtered_destinations[start_index:end_index].iterrows():
+
         try:
+            reviews_with_scores = []
+            for idx, review in enumerate(row['reviews']):
+                review_with_score = review.copy()  # Create a copy of the review dictionary
+                review_with_score['predictedSentiment'] = 0  # Assign sentiment score to userRating
+                reviews_with_scores.append(review_with_score)
+
             destination_dto = DestinationDto(
                 id=row['id'],
                 code=row['code'],
@@ -256,7 +263,7 @@ async def get_all_destinations(page: int, limit: int, search: str = None) -> Des
                 imageUrl=row['imageUrl'],
                 url=row['url'],
                 tags=row['tags'],
-                reviews=[ReviewDto(**review) for review in row['reviews']] if row['reviews'] else None
+                reviews=[ReviewDto(**review) for review in reviews_with_scores] if reviews_with_scores else None
             )
             destinations_dto.append(destination_dto)
         except Exception as e:
