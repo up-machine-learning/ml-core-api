@@ -1,0 +1,66 @@
+name: CICD Development
+
+on:
+  push:
+    branches:
+      - 'develop'
+
+jobs:
+
+  build:
+    if: github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Generate Docker metadata
+        id: meta
+        uses: docker/metadata-action@v3
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+          flavor: |
+            latest=true
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      COMPOSE_FILE_DIR: /root/dev/up
+      COMPOSE_FILE_NAME: ml-docker-compose.yaml
+      WEB_SERVER_SSH_PRIVATE_KEY: ${{secrets.WEB_SERVER_SSH_PRIVATE_KEY}}
+      WEB_SERVER_SSH_HOST: ${{secrets.WEB_SERVER_SSH_HOST}}
+      REGISTRY_USERNAME: ${{secrets.REGISTRY_USERNAME}}
+      REGISTRY_PASSWORD: ${{secrets.REGISTRY_PASSWORD}}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup SSH
+        run: bash ./scripts/setup_ssh.sh
+
+      - name: Server Deployment
+        run: bash ./scripts/deployment.sh

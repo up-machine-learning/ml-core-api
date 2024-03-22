@@ -87,7 +87,7 @@ async def build_ai_trip_model():
     X_num_reviews = combined_df['num_reviews'].values.reshape(-1, 1)
     X_combined = hstack([X_text, X_num_reviews])
 
-    sentiment_model.fit(X_text, y_sentiment)
+    sentiment_model.fit(X_combined, y_sentiment)
     joblib.dump(sentiment_model, sentiment_model_file)
     joblib.dump(vectorizer, vectorizer_model_file)  # Save the trained vectorizer
     print('finish training model sentiment')
@@ -139,7 +139,9 @@ async def get_suggestion_by_type(user_location, desired_tags, destination_type, 
     shops_df['num_reviews'] = combined_df['reviews'].apply(len)
     X_text = vectorizer.transform(
         shops_df['reviews'].apply(lambda reviews: ' '.join([review['comment'] for review in reviews])))
-    shops_df['predicted_sentiment'] = sentiment_model.predict(X_text)
+    X_num_reviews = shops_df['num_reviews'].values.reshape(-1, 1)
+    X_combined_test = hstack([X_text, X_num_reviews])
+    shops_df['predicted_sentiment'] = sentiment_model.predict(X_combined_test)
 
     if desired_tags:
         filtered_shops_df = shops_df[shops_df['tags'].apply(lambda tags: any(tag in tags for tag in desired_tags))]
@@ -182,7 +184,7 @@ async def get_map_list_suggestion(data):
             type=row['type'],
             districtName=row['districtName'],
             rating=row['rating'],
-            reviewCount=row['reviewCount'],
+            reviewCount=len(row.get('reviews', 0)),
             gglat=row['gglat'],
             gglon=row['gglon'],
             imageUrl=row['imageUrl'],
@@ -237,7 +239,7 @@ async def get_all_destinations(page: int, limit: int, search: str = None) -> Des
                 type=row['type'],
                 districtName=row['districtName'],
                 rating=row['rating'],
-                reviewCount=row['reviewCount'],
+                reviewCount=len(row.get('reviews', 0)),
                 gglat=row['gglat'],
                 gglon=row['gglon'],
                 imageUrl=row['imageUrl'],
