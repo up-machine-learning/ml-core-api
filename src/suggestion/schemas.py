@@ -28,6 +28,7 @@ class ReviewDto(_pydantic.BaseModel):
     createTime: int
     comment: str
     userRating: Decimal
+    predictedSentiment: Optional[Decimal]
 
     class Config:
         from_attributes = True
@@ -57,15 +58,26 @@ class DestinationDto(_pydantic.BaseModel):
         arbitrary_types_allowed = True
 
 
+class DestinationResultDto(DestinationDto):
+    avgSentiment: Decimal
+    predictedSentiment: Decimal
+    distance: Decimal
+
+    class Config:
+        from_attributes = True
+        from_orm = True
+        arbitrary_types_allowed = True
+
+
 class DestinationPageDto(_pydantic.BaseModel):
     data: List[DestinationDto]
     totalRecord: int
 
 
 class CreateResponseDto(_pydantic.BaseModel):
-    optionOne: List[DestinationDto]
-    optionTwo: List[DestinationDto]
-    optionThree: List[DestinationDto]
+    optionOne: List[DestinationResultDto]
+    optionTwo: List[DestinationResultDto]
+    optionThree: List[DestinationResultDto]
 
     class Config:
         from_attributes = True

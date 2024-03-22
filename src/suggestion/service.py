@@ -11,7 +11,8 @@ import joblib
 import urllib.parse
 from scipy.sparse import hstack
 
-from src.suggestion.schemas import CreateSuggestionDto, CreateResponseDto, DestinationDto, ReviewDto, DestinationPageDto
+from src.suggestion.schemas import CreateSuggestionDto, CreateResponseDto, DestinationDto, ReviewDto, \
+    DestinationPageDto, DestinationResultDto
 from src.user.model import User
 
 project_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'))
@@ -153,7 +154,7 @@ async def get_suggestion_by_type(user_location, desired_tags, destination_type, 
         lambda row: haversine_distance(user_location, (row['gglat'], row['gglon'])), axis=1)
 
     # Top 5 recommended shops
-    top_5_shop_recommendations = filtered_shops_df.sort_values(by=['num_reviews', 'avg_sentiment'], ascending=[False, False]).head(9)
+    top_5_shop_recommendations = filtered_shops_df.sort_values(by=['distance', 'num_reviews', 'avg_sentiment'], ascending=[True, False, False]).head(9)
     # print(top_5_shop_recommendations[
     #           ['id', 'type', 'name', 'avg_sentiment', 'distance', 'predicted_sentiment', 'gglat', 'gglon', 'tags']])
     top_5_shop_recommendation_array = top_5_shop_recommendations.to_numpy()
@@ -176,7 +177,13 @@ async def get_suggestion_by_type(user_location, desired_tags, destination_type, 
 async def get_map_list_suggestion(data):
     suggestion_result = []
     for _, row in data.iterrows():
-        destination_dto = DestinationDto(
+        reviews_with_scores = []
+        for idx, review in enumerate(row['reviews']):
+            user_rating = row['sentiment_scores'][idx]  # Get sentiment score at the corresponding index
+            review_with_score = review.copy()  # Create a copy of the review dictionary
+            review_with_score['predictedSentiment'] = user_rating  # Assign sentiment score to userRating
+            reviews_with_scores.append(review_with_score)
+        destination_dto = DestinationResultDto(
             id=row['id'],
             code=row['code'],
             name=row['name'],
@@ -190,7 +197,11 @@ async def get_map_list_suggestion(data):
             imageUrl=row['imageUrl'],
             url=row['url'],
             tags=row['tags'],
-            reviews=[ReviewDto(**review) for review in row['reviews']] if row['reviews'] else None
+            avgSentiment=row['avg_sentiment'],
+            predictedSentiment=row['predicted_sentiment'],
+            distance=row['distance'],
+            reviews=[ReviewDto(**review) for review in reviews_with_scores] if reviews_with_scores else None
+            # reviews=[ReviewDto(**review) for review in row['reviews']] if row['reviews'] else None
         )
         suggestion_result.append(destination_dto)
     return suggestion_result
